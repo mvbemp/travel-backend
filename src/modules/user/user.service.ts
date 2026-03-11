@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/core/prisma/prisma.service';
@@ -10,43 +10,42 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    const checkExist = await this.prisma.user.findUnique({
-      where: {
-        email: createUserDto.email,
-      },
+    const existing = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
     });
+    if (existing) throw new ConflictException('User with this email already exists');
 
-    if (checkExist) {
-      return 'User with this email already exists';
-    }
-    
-    const user = await this.prisma.user.create({
-      data: {
-        email: createUserDto.email,
-        full_name: createUserDto.full_name,
-        password: createUserDto.password,
-        type: createUserDto.type,
-        phone_number: createUserDto.phone_number,
-
-      },
-    });
-
-    return user;
+    return this.prisma.user.create({ data: createUserDto });
   }
 
   async findAll() {
-    return await this.prisma.user.findMany();
+    return this.prisma.user.findMany({ omit: { password: true } });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      omit: { password: true },
+    });
+    if (!user) throw new NotFoundException(`User #${id} not found`);
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    await this.findOne(id);
+    if (id === 1 && updateUserDto.type !== undefined) {
+      throw new ForbiddenException('Cannot change type of this user');
+    }
+    return this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+      omit: { password: true },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: number) {
+    await this.findOne(id);
+    if (id === 1) throw new ForbiddenException('Cannot delete this user');
+    await this.prisma.user.delete({ where: { id } });
   }
 }
