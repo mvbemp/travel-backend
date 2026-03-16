@@ -2,6 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/core/prisma/prisma.service';
+import { __ } from 'src/common/helpers/translation.helper';
 
 @Injectable()
 export class UserService {
@@ -13,7 +14,7 @@ export class UserService {
     const existing = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
-    if (existing) throw new ConflictException('User with this email already exists');
+    if (existing) throw new ConflictException(__('messages.email_unique'));
 
     return this.prisma.user.create({ data: createUserDto });
   }
@@ -27,14 +28,14 @@ export class UserService {
       where: { id },
       omit: { password: true },
     });
-    if (!user) throw new NotFoundException(`User #${id} not found`);
+    if (!user) throw new NotFoundException(__('messages.user_not_found'));
     return user;
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
     if (id === 1 && updateUserDto.type !== undefined) {
-      throw new ForbiddenException('Cannot change type of this user');
+      throw new ForbiddenException(__('messages.user_cannot_change_type'));
     }
     return this.prisma.user.update({
       where: { id },
@@ -45,7 +46,7 @@ export class UserService {
 
   async remove(id: number) {
     await this.findOne(id);
-    if (id === 1) throw new ForbiddenException('Cannot delete this user');
+    if (id === 1) throw new ForbiddenException(__('messages.user_cannot_delete'));
     await this.prisma.user.delete({ where: { id } });
   }
 }

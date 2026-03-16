@@ -1,0 +1,11 @@
+{
+  "email_unique": "User with this email already exists",
+  "user_not_found": "User not found",
+  "user_cannot_change_type": "Cannot change type of this user",
+  "user_cannot_delete": "Cannot delete this user",
+  "group_not_found": "Group not found",
+  "group_only_admin_delete": "Only admin can delete a group",
+  "member_not_found": "Member not found",
+  "member_only_creator_or_admin_delete": "Only the creator or admin can delete this member",
+  "invalid_credentials": "Invalid credentials"
+}

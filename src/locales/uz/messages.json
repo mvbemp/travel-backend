@@ -1,0 +1,11 @@
+{
+  "email_unique": "Bu email bilan foydalanuvchi allaqachon mavjud",
+  "user_not_found": "Foydalanuvchi topilmadi",
+  "user_cannot_change_type": "Bu foydalanuvchining turini o'zgartirib bo'lmaydi",
+  "user_cannot_delete": "Bu foydalanuvchini o'chirib bo'lmaydi",
+  "group_not_found": "Guruh topilmadi",
+  "group_only_admin_delete": "Faqat admin guruhni o'chira oladi",
+  "member_not_found": "A'zo topilmadi",
+  "member_only_creator_or_admin_delete": "Faqat yaratuvchi yoki admin bu a'zoni o'chira oladi",
+  "invalid_credentials": "Noto'g'ri ma'lumotlar"
+}

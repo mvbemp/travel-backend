@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserType } from 'generated/prisma/enums';
+import { __ } from 'src/common/helpers/translation.helper';
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -39,7 +40,7 @@ export class GroupService {
         groupMember: true,
       },
     });
-    if (!group) throw new NotFoundException(`Group #${id} not found`);
+    if (!group) throw new NotFoundException(__('messages.group_not_found'));
     return group;
   }
 
@@ -52,15 +53,15 @@ export class GroupService {
 
   async updateMember(memberId: number, dto: UpdateMemberDto) {
     const member = await this.prisma.groupMember.findUnique({ where: { id: memberId } });
-    if (!member) throw new NotFoundException(`Member #${memberId} not found`);
+    if (!member) throw new NotFoundException(__('messages.member_not_found'));
     return this.prisma.groupMember.update({ where: { id: memberId }, data: dto });
   }
 
   async removeMember(memberId: number, userId: number, userType: UserType) {
     const member = await this.prisma.groupMember.findUnique({ where: { id: memberId } });
-    if (!member) throw new NotFoundException(`Member #${memberId} not found`);
+    if (!member) throw new NotFoundException(__('messages.member_not_found'));
     if (member.created_by !== userId && userType !== UserType.admin) {
-      throw new ForbiddenException('Only the creator or admin can delete this member');
+      throw new ForbiddenException(__('messages.member_only_creator_or_admin_delete'));
     }
     await this.prisma.groupMember.delete({ where: { id: memberId } });
   }
@@ -81,7 +82,7 @@ export class GroupService {
   async remove(id: number, userType: UserType) {
     await this.findOne(id);
     if (userType !== UserType.admin) {
-      throw new ForbiddenException('Only admin can delete a group');
+      throw new ForbiddenException(__('messages.group_only_admin_delete'));
     }
     await this.prisma.group.delete({ where: { id } });
   }

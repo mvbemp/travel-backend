@@ -1,0 +1,11 @@
+{
+  "email_unique": "Пользователь с таким email уже существует",
+  "user_not_found": "Пользователь не найден",
+  "user_cannot_change_type": "Нельзя изменить тип этого пользователя",
+  "user_cannot_delete": "Нельзя удалить этого пользователя",
+  "group_not_found": "Группа не найдена",
+  "group_only_admin_delete": "Только администратор может удалить группу",
+  "member_not_found": "Участник не найден",
+  "member_only_creator_or_admin_delete": "Только создатель или администратор может удалить этого участника",
+  "invalid_credentials": "Неверные учётные данные"
+}
