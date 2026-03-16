@@ -20,6 +20,8 @@ async function bootstrap() {
     SwaggerModule.setup('docs', app, document);
   }
 
+  app.setGlobalPrefix('api')
+
   await app.listen(process.env.APP_PORT || 3000, () => {
     console.log(`Server ready at http://localhost:${process.env.APP_PORT}`);
     console.log(`Swagger docs at http://localhost:${process.env.APP_PORT}/docs`);
