@@ -36,6 +36,7 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             cd /var/www/travel/travel-backend
             git pull origin main
+            npx prisma generate
             npx prisma migrate deploy --accept-data-loss
             npm install
             npm run build
