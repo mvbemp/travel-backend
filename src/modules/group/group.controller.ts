@@ -27,8 +27,17 @@ export class GroupController {
 
   @Get()
   @ApiOkResponse({ type: PaginatedGroupEntity })
-  findAll(@Query('page') page = 1) {
-    return this.groupService.findAll(+page);
+  findAll(
+    @Query('page') page = 1,
+    @Query('perPage') perPage = 15,
+    @Query('search') search?: string,
+  ) {
+    return this.groupService.findAll(+page, +perPage, search);
+  }
+
+  @Get('dashboard')
+  getDashboard() {
+    return this.groupService.getDashboard();
   }
 
   @Get(':id')

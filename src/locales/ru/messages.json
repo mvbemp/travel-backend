@@ -7,5 +7,7 @@
   "group_only_admin_delete": "Только администратор может удалить группу",
   "member_not_found": "Участник не найден",
   "member_only_creator_or_admin_delete": "Только создатель или администратор может удалить этого участника",
-  "invalid_credentials": "Неверные учётные данные"
+  "invalid_credentials": "Неверные учётные данные",
+  "not_found": "Запись не найдена",
+  "already_exists": "Запись с такими данными уже существует"
 }

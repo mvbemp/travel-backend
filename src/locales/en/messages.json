@@ -7,5 +7,7 @@
   "group_only_admin_delete": "Only admin can delete a group",
   "member_not_found": "Member not found",
   "member_only_creator_or_admin_delete": "Only the creator or admin can delete this member",
-  "invalid_credentials": "Invalid credentials"
+  "invalid_credentials": "Invalid credentials",
+  "not_found": "Record not found",
+  "already_exists": "Record with this data already exists"
 }

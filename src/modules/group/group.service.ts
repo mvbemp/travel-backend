@@ -17,19 +17,44 @@ export class GroupService {
     });
   }
 
-  async findAll(page: number) {
-    const perPage = 15;
+  async findAll(page: number, perPage: number, search?: string) {
     const skip = (page - 1) * perPage;
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { description: { contains: search, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
     const [data, total] = await Promise.all([
       this.prisma.group.findMany({
         skip,
         take: perPage,
+        where,
         orderBy: { created_at: 'desc' },
-        include: { creator: { omit: { password: true } } },
+        include: {
+          creator: { omit: { password: true } },
+          _count: { select: { groupMember: true } },
+        },
       }),
-      this.prisma.group.count(),
+      this.prisma.group.count({ where }),
     ]);
     return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) };
+  }
+
+  async getDashboard() {
+    const [total, finished, totalMembers] = await Promise.all([
+      this.prisma.group.count(),
+      this.prisma.group.count({ where: { is_finished: true } }),
+      this.prisma.groupMember.count(),
+    ]);
+    return {
+      total,
+      finished,
+      active: total - finished,
+      totalMembers,
+    };
   }
 
   async findOne(id: number) {
@@ -37,7 +62,7 @@ export class GroupService {
       where: { id },
       include: {
         creator: { omit: { password: true } },
-        groupMember: true,
+        groupMember: { include: { currency: true } },
       },
     });
     if (!group) throw new NotFoundException(__('messages.group_not_found'));
@@ -46,15 +71,25 @@ export class GroupService {
 
   async addMember(groupId: number, dto: AddMemberDto, userId: number) {
     await this.findOne(groupId);
+    let currencyId = dto.currency_id;
+    if (!currencyId) {
+      const usd = await this.prisma.currency.findFirst({ where: { code: 'USD' } });
+      currencyId = usd?.id;
+    }
     return this.prisma.groupMember.create({
-      data: { ...dto, group_id: groupId, created_by: userId },
+      data: { ...dto, group_id: groupId, created_by: userId, currency_id: currencyId },
+      include: { currency: true },
     });
   }
 
   async updateMember(memberId: number, dto: UpdateMemberDto) {
     const member = await this.prisma.groupMember.findUnique({ where: { id: memberId } });
     if (!member) throw new NotFoundException(__('messages.member_not_found'));
-    return this.prisma.groupMember.update({ where: { id: memberId }, data: dto });
+    return this.prisma.groupMember.update({
+      where: { id: memberId },
+      data: dto,
+      include: { currency: true },
+    });
   }
 
   async removeMember(memberId: number, userId: number, userType: UserType) {

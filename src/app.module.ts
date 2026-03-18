@@ -3,6 +3,8 @@ import { PrismaModule } from './core/prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupModule } from './modules/group/group.module';
+import { CurrencyModule } from './modules/currency/currency.module';
+import { ExpenseModule } from './modules/expense/expense.module';
 import { APP_PIPE } from '@nestjs/core';
 import { AcceptLanguageResolver, I18nJsonLoader, I18nModule, QueryResolver } from 'nestjs-i18n';
 import { join } from 'path';
@@ -20,10 +22,12 @@ import { join } from 'path';
       }),
       resolvers: [{ use: QueryResolver, options: ['lang'] }, AcceptLanguageResolver],
     }),
-    PrismaModule, 
-    UserModule, 
-    AuthModule, 
-    GroupModule
+    PrismaModule,
+    UserModule,
+    AuthModule,
+    GroupModule,
+    CurrencyModule,
+    ExpenseModule,
   ],
   providers: [
     {

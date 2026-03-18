@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
 import { PassportType } from 'generated/prisma/enums';
 
 export class AddMemberDto {
@@ -17,6 +17,12 @@ export class AddMemberDto {
   @IsEnum(PassportType)
   @IsOptional()
   passport_type?: PassportType;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsInt()
+  @IsPositive()
+  @IsOptional()
+  currency_id?: number;
 
   @ApiPropertyOptional({ example: 0, default: 0 })
   @IsNumber()

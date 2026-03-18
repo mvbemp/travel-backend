@@ -7,5 +7,7 @@
   "group_only_admin_delete": "Faqat admin guruhni o'chira oladi",
   "member_not_found": "A'zo topilmadi",
   "member_only_creator_or_admin_delete": "Faqat yaratuvchi yoki admin bu a'zoni o'chira oladi",
-  "invalid_credentials": "Noto'g'ri ma'lumotlar"
+  "invalid_credentials": "Noto'g'ri ma'lumotlar",
+  "not_found": "Yozuv topilmadi",
+  "already_exists": "Bunday ma'lumotlar bilan yozuv allaqachon mavjud"
 }

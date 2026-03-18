@@ -19,8 +19,28 @@ export class UserService {
     return this.prisma.user.create({ data: createUserDto });
   }
 
-  async findAll() {
-    return this.prisma.user.findMany({ omit: { password: true } });
+  async findAll(page: number, perPage: number, search?: string) {
+    const skip = (page - 1) * perPage;
+    const where = search
+      ? {
+          OR: [
+            { full_name: { contains: search, mode: 'insensitive' as const } },
+            { email: { contains: search, mode: 'insensitive' as const } },
+            { phone_number: { contains: search, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take: perPage,
+        where,
+        omit: { password: true },
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+    return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) };
   }
 
   async findOne(id: number) {

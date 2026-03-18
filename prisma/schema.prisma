@@ -31,7 +31,6 @@ model User {
 
   groups       Group[]
   groupMembers GroupMember[]
-  expenses     Expense[]
 
   @@map("users")
 }
@@ -48,7 +47,6 @@ model Group {
 
   creator     User         @relation(fields: [created_by], references: [id])
   groupMember GroupMember[]
-  expenses    Expense[]
 
   @@map("groups")
 }
@@ -66,36 +64,41 @@ model GroupMember {
   passport      String?
   passport_type PassportType?
   created_by    Int
+  currency_id   Int?
   payment       Decimal       @default(0) @db.Decimal(10, 2)
   created_at    DateTime      @default(now())
   updated_at    DateTime      @updatedAt
 
-  group   Group @relation(fields: [group_id], references: [id])
-  creator User  @relation(fields: [created_by], references: [id])
+  group    Group     @relation(fields: [group_id], references: [id])
+  creator  User      @relation(fields: [created_by], references: [id])
+  currency Currency? @relation(fields: [currency_id], references: [id])
 
   @@map("group_members")
 }
 
-enum ExpenseType {
-  transport
-  visa
-  suits
-  ticket
-  others
+model Currency {
+  id         Int       @id @default(autoincrement())
+  code       String    @unique
+  symbol     String    @unique
+  country    String    @unique
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  expenses     Expense[]
+  groupMembers GroupMember[]
+
+  @@map("currencies")
 }
 
 model Expense {
-  id          Int         @id @default(autoincrement())
-  group_id    Int?
-  amount      Decimal     @db.Decimal(10, 2)
-  description String?
-  type        ExpenseType @default(others)
-  created_by  Int
-  created_at  DateTime    @default(now())
-  updated_at  DateTime    @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  currency_id Int
+  value       Decimal  @db.Decimal(10, 2)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  group   Group? @relation(fields: [group_id], references: [id])
-  creator User   @relation(fields: [created_by], references: [id])
+  currency Currency @relation(fields: [currency_id], references: [id])
 
   @@map("expenses")
 }
