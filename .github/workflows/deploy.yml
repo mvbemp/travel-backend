@@ -37,7 +37,7 @@ jobs:
             cd /var/www/travel/travel-backend
             git pull origin main
             npx prisma generate
-            npx prisma migrate deploy --accept-data-loss
+            npx prisma migrate deploy
             npm install
             npm run build
             pm2 restart travel-backend
