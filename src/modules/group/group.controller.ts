@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { UserType } from 'generated/prisma/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AddGroupExpenseDto } from './dto/add-group-expense.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -69,6 +70,17 @@ export class GroupController {
     @CurrentUser() user: { id: number; type: UserType },
   ) {
     return this.groupService.removeMember(+memberId, user.id, user.type);
+  }
+
+  @Post(':id/expenses')
+  addExpense(@Param('id') id: string, @Body() dto: AddGroupExpenseDto) {
+    return this.groupService.addExpense(+id, dto);
+  }
+
+  @Delete(':id/expenses/:expenseId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeExpense(@Param('expenseId') expenseId: string) {
+    return this.groupService.removeExpense(+expenseId);
   }
 
   @Patch(':id')

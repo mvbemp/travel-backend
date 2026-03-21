@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrencyService } from './currency.service';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
@@ -22,8 +22,16 @@ export class CurrencyController {
   }
 
   @Get()
-  findAll() {
-    return this.currencyService.findAll();
+  findAll(
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.currencyService.findAll(
+      page !== undefined ? +page : undefined,
+      perPage !== undefined ? +perPage : undefined,
+      search,
+    );
   }
 
   @Get(':id')

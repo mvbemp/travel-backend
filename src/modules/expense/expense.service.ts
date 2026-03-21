@@ -20,8 +20,24 @@ export class ExpenseService {
     });
   }
 
-  async findAll() {
-    return this.prisma.expense.findMany({ include: { currency: true } });
+  async findAll(page?: number, perPage?: number, search?: string) {
+    if (page === undefined || perPage === undefined) {
+      return this.prisma.expense.findMany({ include: { currency: true } });
+    }
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { currency: { code: { contains: search, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {};
+    const skip = (page - 1) * perPage;
+    const [data, total] = await Promise.all([
+      this.prisma.expense.findMany({ where, skip, take: perPage, orderBy: { id: 'asc' }, include: { currency: true } }),
+      this.prisma.expense.count({ where }),
+    ]);
+    return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) };
   }
 
   async findOne(id: number) {

@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { UserType } from 'generated/prisma/enums';
 import { __ } from 'src/common/helpers/translation.helper';
 import { PrismaService } from 'src/core/prisma/prisma.service';
+import { AddGroupExpenseDto } from './dto/add-group-expense.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -63,10 +64,27 @@ export class GroupService {
       include: {
         creator: { omit: { password: true } },
         groupMember: { include: { currency: true } },
+        groupExpenses: { include: { expense: { include: { currency: true } } }, orderBy: { created_at: 'asc' } },
       },
     });
     if (!group) throw new NotFoundException(__('messages.group_not_found'));
     return group;
+  }
+
+  async addExpense(groupId: number, dto: AddGroupExpenseDto) {
+    await this.findOne(groupId);
+    const expense = await this.prisma.expense.findUnique({ where: { id: dto.expense_id } });
+    if (!expense) throw new NotFoundException(__('messages.not_found'));
+    return this.prisma.groupExpense.create({
+      data: { group_id: groupId, expense_id: dto.expense_id, value: dto.value },
+      include: { expense: { include: { currency: true } } },
+    });
+  }
+
+  async removeExpense(groupExpenseId: number) {
+    const ge = await this.prisma.groupExpense.findUnique({ where: { id: groupExpenseId } });
+    if (!ge) throw new NotFoundException(__('messages.not_found'));
+    await this.prisma.groupExpense.delete({ where: { id: groupExpenseId } });
   }
 
   async addMember(groupId: number, dto: AddMemberDto, userId: number) {
