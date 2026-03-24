@@ -11,7 +11,9 @@ async function bootstrap() {
   const corsOrigins = process.env.CORS_ORIGINS?.split(',') ?? [];
   app.enableCors({ origin: corsOrigins });
 
-  if (process.env.SWAGGER_ENABLED === 'true') {
+  app.setGlobalPrefix('api')
+
+  if (process.env.ENABLE_SWAGGER === 'true') {
     const config = new DocumentBuilder()
       .setTitle(process.env.APP_NAME || 'Travel API')
       .setVersion(process.env.APP_VERSION || '1.0.0')
@@ -21,8 +23,6 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('docs', app, document);
   }
-
-  app.setGlobalPrefix('api')
 
   // Setup i18n service globally
   const i18n = app.get<I18nService<Record<string, unknown>>>(I18nService);

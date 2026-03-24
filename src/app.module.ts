@@ -8,6 +8,7 @@ import { ExpenseModule } from './modules/expense/expense.module';
 import { APP_PIPE } from '@nestjs/core';
 import { AcceptLanguageResolver, I18nJsonLoader, I18nModule, QueryResolver } from 'nestjs-i18n';
 import { join } from 'path';
+import { CommonModule } from './modules/common/common.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { join } from 'path';
     GroupModule,
     CurrencyModule,
     ExpenseModule,
+    CommonModule
   ],
   providers: [
     {
