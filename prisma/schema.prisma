@@ -15,6 +15,7 @@ datasource db {
 }
 
 enum UserType {
+  super_admin
   admin
   user
 }

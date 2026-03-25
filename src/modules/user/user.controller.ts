@@ -11,7 +11,7 @@ import { UserType } from 'generated/prisma/enums';
 @ApiTags('Users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserType.admin)
+@Roles(UserType.super_admin, UserType.admin)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}

@@ -12,6 +12,8 @@ import { GroupMemberEntity } from './entities/group-member.entity';
 import { GroupEntity } from './entities/group.entity';
 import { PaginatedGroupEntity } from './entities/paginated-group.entity';
 import { GroupService } from './group.service';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('Groups')
 @ApiBearerAuth()
@@ -20,6 +22,8 @@ import { GroupService } from './group.service';
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
   @Post()
   @ApiOkResponse({ type: GroupEntity })
   create(@Body() dto: CreateGroupDto, @CurrentUser() user: { id: number }) {
@@ -83,18 +87,24 @@ export class GroupController {
     return this.groupService.removeExpense(+expenseId);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
   @Patch(':id')
   @ApiOkResponse({ type: GroupEntity })
   update(@Param('id') id: string, @Body() dto: UpdateGroupDto) {
     return this.groupService.update(+id, dto);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
   @Patch(':id/finish')
   @ApiOkResponse({ type: GroupEntity })
   finish(@Param('id') id: string) {
     return this.groupService.finish(+id);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(

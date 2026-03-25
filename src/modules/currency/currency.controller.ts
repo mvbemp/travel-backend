@@ -11,7 +11,7 @@ import { UserType } from 'generated/prisma/enums';
 @ApiTags('Currencies')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserType.admin)
+@Roles(UserType.super_admin, UserType.admin)
 @Controller('currencies')
 export class CurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}
