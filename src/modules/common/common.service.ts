@@ -15,4 +15,10 @@ export class CommonService {
         })
         return expenses;
     }
+
+    async getCurrencies(){
+        return this.prisma.currency.findMany({
+            orderBy: [{ is_main: 'desc' }, { id: 'asc' }]
+        });
+    }
 }

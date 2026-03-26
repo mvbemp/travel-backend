@@ -15,4 +15,9 @@ export class CommonController {
     expenses(){
         return this.service.getExpenses()
     }
+
+    @Get('/currencies')
+    currencies(){
+        return this.service.getCurrencies()
+    }
 }

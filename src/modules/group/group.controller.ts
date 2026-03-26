@@ -51,6 +51,13 @@ export class GroupController {
     return this.groupService.findOne(+id);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
+  @Get(':id/members/deleted')
+  getDeletedMembers(@Param('id') id: string) {
+    return this.groupService.getDeletedMembers(+id);
+  }
+
   @Post(':id/members')
   @ApiOkResponse({ type: GroupMemberEntity })
   addMember(

@@ -20,12 +20,19 @@ export class CurrencyService {
     });
     if (existing) throw new ConflictException(__('messages.already_exists'));
 
+    if (createCurrencyDto.is_main) {
+      return this.prisma.$transaction(async (tx) => {
+        await tx.currency.updateMany({ data: { is_main: false } });
+        return tx.currency.create({ data: createCurrencyDto });
+      });
+    }
+
     return this.prisma.currency.create({ data: createCurrencyDto });
   }
 
   async findAll(page?: number, perPage?: number, search?: string) {
     if (page === undefined || perPage === undefined) {
-      return this.prisma.currency.findMany();
+      return this.prisma.currency.findMany({ orderBy: [{ is_main: 'desc' }, { id: 'asc' }] });
     }
     const where = search
       ? {
@@ -38,7 +45,7 @@ export class CurrencyService {
       : {};
     const skip = (page - 1) * perPage;
     const [data, total] = await Promise.all([
-      this.prisma.currency.findMany({ where, skip, take: perPage, orderBy: { id: 'asc' } }),
+      this.prisma.currency.findMany({ where, skip, take: perPage, orderBy: [{ is_main: 'desc' }, { id: 'asc' }] }),
       this.prisma.currency.count({ where }),
     ]);
     return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) };
@@ -63,6 +70,13 @@ export class CurrencyService {
         where: { OR: conditions, NOT: { id } },
       });
       if (conflict) throw new ConflictException(__('messages.already_exists'));
+    }
+
+    if (updateCurrencyDto.is_main) {
+      return this.prisma.$transaction(async (tx) => {
+        await tx.currency.updateMany({ where: { id: { not: id } }, data: { is_main: false } });
+        return tx.currency.update({ where: { id }, data: updateCurrencyDto });
+      });
     }
 
     return this.prisma.currency.update({ where: { id }, data: updateCurrencyDto });

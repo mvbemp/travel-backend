@@ -63,7 +63,7 @@ export class GroupService {
       where: { id },
       include: {
         creator: { omit: { password: true } },
-        groupMember: { include: { currency: true } },
+        groupMember: { where: { is_deleted: false }, include: { currency: true, creator: { omit: { password: true } } } },
         groupExpenses: { include: { expense: { include: { currency: true } } }, orderBy: { created_at: 'asc' } },
       },
     });
@@ -87,15 +87,25 @@ export class GroupService {
     await this.prisma.groupExpense.delete({ where: { id: groupExpenseId } });
   }
 
+  private async resolveCurrency(currencyId?: number | null) {
+    if (!currencyId) {
+      return this.prisma.currency.findFirst({ where: { is_main: true } });
+    }
+    return this.prisma.currency.findUnique({ where: { id: currencyId } });
+  }
+
+  private toMainCurrency(amount: number, currencyRate: number): number {
+    return currencyRate === 0 ? amount : amount / currencyRate;
+  }
+
   async addMember(groupId: number, dto: AddMemberDto, userId: number) {
     await this.findOne(groupId);
-    let currencyId = dto.currency_id;
-    if (!currencyId) {
-      const usd = await this.prisma.currency.findFirst({ where: { code: 'USD' } });
-      currencyId = usd?.id;
-    }
+    const currency = await this.resolveCurrency(dto.currency_id);
+    const currency_rate = Number(currency?.currency_change) || 1;
+    const original_payment = Number(dto.payment) || 0;
+    const payment = this.toMainCurrency(original_payment, currency_rate);
     return this.prisma.groupMember.create({
-      data: { ...dto, group_id: groupId, created_by: userId, currency_id: currencyId },
+      data: { ...dto, group_id: groupId, created_by: userId, currency_id: currency?.id, currency_rate, payment, original_payment },
       include: { currency: true },
     });
   }
@@ -103,9 +113,20 @@ export class GroupService {
   async updateMember(memberId: number, dto: UpdateMemberDto) {
     const member = await this.prisma.groupMember.findUnique({ where: { id: memberId } });
     if (!member) throw new NotFoundException(__('messages.member_not_found'));
+    const currencyId = dto.currency_id !== undefined ? dto.currency_id : member.currency_id;
+    const currency = await this.resolveCurrency(currencyId);
+    const currency_rate = Number(currency?.currency_change) || 1;
+    const original_payment = dto.payment !== undefined ? Number(dto.payment) : undefined;
+    const payment = original_payment !== undefined
+      ? this.toMainCurrency(original_payment, currency_rate)
+      : undefined;
     return this.prisma.groupMember.update({
       where: { id: memberId },
-      data: dto,
+      data: {
+        ...dto,
+        currency_rate,
+        ...(original_payment !== undefined && { original_payment, payment }),
+      },
       include: { currency: true },
     });
   }
@@ -113,10 +134,19 @@ export class GroupService {
   async removeMember(memberId: number, userId: number, userType: UserType) {
     const member = await this.prisma.groupMember.findUnique({ where: { id: memberId } });
     if (!member) throw new NotFoundException(__('messages.member_not_found'));
-    if (member.created_by !== userId && userType !== UserType.admin) {
+    if (member.created_by !== userId && userType !== UserType.admin && userType !== UserType.super_admin) {
       throw new ForbiddenException(__('messages.member_only_creator_or_admin_delete'));
     }
-    await this.prisma.groupMember.delete({ where: { id: memberId } });
+    await this.prisma.groupMember.update({ where: { id: memberId }, data: { is_deleted: true, deleted_by: userId } });
+  }
+
+  async getDeletedMembers(groupId: number) {
+    await this.findOne(groupId);
+    return this.prisma.groupMember.findMany({
+      where: { group_id: groupId, is_deleted: true },
+      include: { currency: true, creator: { omit: { password: true } }, deleter: { omit: { password: true } } },
+      orderBy: { updated_at: 'desc' },
+    });
   }
 
   async update(id: number, dto: UpdateGroupDto) {
