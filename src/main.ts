@@ -27,7 +27,7 @@ async function bootstrap() {
   // Setup i18n service globally
   const i18n = app.get<I18nService<Record<string, unknown>>>(I18nService);
   setI18nService(i18n);
-
+  
   await app.listen(process.env.APP_PORT || 3000, () => {
     console.log(`Server ready at http://localhost:${process.env.APP_PORT}`);
     console.log(`Swagger docs at http://localhost:${process.env.APP_PORT}/docs`);

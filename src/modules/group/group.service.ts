@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import ExcelJS from 'exceljs';
 import { UserType } from 'generated/prisma/enums';
 import { __ } from 'src/common/helpers/translation.helper';
 import { PrismaService } from 'src/core/prisma/prisma.service';
@@ -168,5 +169,55 @@ export class GroupService {
       throw new ForbiddenException(__('messages.group_only_admin_delete'));
     }
     await this.prisma.group.delete({ where: { id } });
+  }
+
+  async generateReport(groupId: number): Promise<{ buffer: Buffer; filename: string }> {
+    const group = await this.findOne(groupId);
+    const members = group.groupMember;
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Members');
+
+    const border = {
+      top: { style: 'thin' as const }, left: { style: 'thin' as const },
+      bottom: { style: 'thin' as const }, right: { style: 'thin' as const },
+    };
+
+    const headers = ['#', 'Surname', 'Name', 'PAX type', 'Nationality', 'Passport #', 'Date of Birth', 'Gender', 'Date of Expiry'];
+    const widths =  [5,   18,        18,     10,          13,            14,            15,               9,        15];
+
+    sheet.columns = headers.map((header, i) => ({ header, key: String(i), width: widths[i] }));
+
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.height = 16;
+    headerRow.eachCell(cell => { cell.border = border; });
+
+    const formatDate = (date: Date | string | null | undefined): string => {
+      if (!date) return '';
+      const d = new Date(date);
+      return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+    };
+
+    members.forEach((m, i) => {
+      const row = sheet.addRow([
+        i + 1,
+        (m.last_name ?? '').toUpperCase(),
+        (m.first_name ?? '').toUpperCase(),
+        m.pax_type ?? '',
+        (m.nationality ?? '').toUpperCase(),
+        m.passport ?? '',
+        formatDate(m.date_of_birth),
+        m.gender === 'male' ? 'M' : m.gender === 'female' ? 'F' : '',
+        formatDate(m.date_of_expiry),
+      ]);
+      row.alignment = { horizontal: 'center', vertical: 'middle' };
+      row.eachCell(cell => { cell.border = border; });
+    });
+
+    const raw = await workbook.xlsx.writeBuffer();
+    const safeName = group.name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim() || `group-${groupId}`;
+    return { buffer: Buffer.from(raw), filename: `${safeName}.xlsx` };
   }
 }

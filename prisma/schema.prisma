@@ -54,26 +54,37 @@ model Group {
   @@map("groups")
 }
 
-enum PassportType {
-  green_passport
-  red_passport
-  id_card
+enum PaxType {
+  A
+  C
+  I
+}
+
+enum Gender {
+  male
+  female
 }
 
 model GroupMember {
-  id               Int           @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   group_id         Int
-  name             String
+  first_name       String
+  last_name        String
+  pax_type         PaxType   @default(A)
+  nationality      String?
   passport         String?
-  passport_type    PassportType?
+  date_of_birth    DateTime? @db.Date
+  gender           Gender?
+  date_of_expiry   DateTime? @db.Date
+  comment          String?
   created_by       Int
   currency_id      Int?
-  payment          Decimal       @default(0) @db.Decimal(10, 2)
-  original_payment Decimal       @default(0) @db.Decimal(10, 2)
-  currency_rate    Decimal       @default(1) @db.Decimal(20, 5)
-  created_at       DateTime      @default(now())
-  updated_at       DateTime      @updatedAt
-  is_deleted       Boolean       @default(false)
+  payment          Decimal   @default(0) @db.Decimal(10, 2)
+  original_payment Decimal   @default(0) @db.Decimal(10, 2)
+  currency_rate    Decimal   @default(1) @db.Decimal(20, 5)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  is_deleted       Boolean   @default(false)
   deleted_by       Int?
 
   group    Group     @relation(fields: [group_id], references: [id])

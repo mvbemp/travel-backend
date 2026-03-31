@@ -26,6 +26,18 @@ async function main() {
 
   const hash = await bcrypt.hash('test123', 10);
 
+  const superAdmin = await prisma.user.upsert({
+    where: { email: 'superadmin@travel.com' },
+    update: {},
+    create: {
+      email: 'superadmin@travel.com',
+      full_name: 'Super Admin',
+      password: hash,
+      phone_number: '+10000000000',
+      type: 'super_admin',
+    },
+  });
+
   const admin = await prisma.user.upsert({
     where: { email: 'admin@travel.com' },
     update: {},
