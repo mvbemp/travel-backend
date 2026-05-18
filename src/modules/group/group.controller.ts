@@ -1,4 +1,17 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { UserType } from 'generated/prisma/enums';
@@ -56,7 +69,8 @@ export class GroupController {
   async downloadReport(@Param('id') id: string, @Res() res: Response) {
     const { buffer, filename } = await this.groupService.generateReport(+id);
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${filename}"`,
     });
     res.send(buffer);
@@ -81,7 +95,10 @@ export class GroupController {
 
   @Patch(':groupId/members/:memberId')
   @ApiOkResponse({ type: GroupMemberEntity })
-  updateMember(@Param('memberId') memberId: string, @Body() dto: UpdateMemberDto) {
+  updateMember(
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateMemberDto,
+  ) {
     return this.groupService.updateMember(+memberId, dto);
   }
 

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateExpenseDto {
   @ApiProperty({ example: 'Flight ticket' })
@@ -12,7 +19,7 @@ export class CreateExpenseDto {
   @IsPositive()
   currency_id: number;
 
-  @ApiProperty({ example: 150.00 })
+  @ApiProperty({ example: 150.0 })
   @IsNumber()
   @Min(0)
   value: number;

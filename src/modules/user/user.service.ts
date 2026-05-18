@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/core/prisma/prisma.service';
@@ -6,9 +11,7 @@ import { __ } from 'src/common/helpers/translation.helper';
 
 @Injectable()
 export class UserService {
-  constructor (
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
     const existing = await this.prisma.user.findUnique({
@@ -26,7 +29,9 @@ export class UserService {
           OR: [
             { full_name: { contains: search, mode: 'insensitive' as const } },
             { email: { contains: search, mode: 'insensitive' as const } },
-            { phone_number: { contains: search, mode: 'insensitive' as const } },
+            {
+              phone_number: { contains: search, mode: 'insensitive' as const },
+            },
           ],
         }
       : {};
@@ -66,7 +71,8 @@ export class UserService {
 
   async remove(id: number) {
     await this.findOne(id);
-    if (id === 1) throw new ForbiddenException(__('messages.user_cannot_delete'));
+    if (id === 1)
+      throw new ForbiddenException(__('messages.user_cannot_delete'));
     await this.prisma.user.delete({ where: { id } });
   }
 }

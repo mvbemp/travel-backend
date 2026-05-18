@@ -6,7 +6,12 @@ import { GroupModule } from './modules/group/group.module';
 import { CurrencyModule } from './modules/currency/currency.module';
 import { ExpenseModule } from './modules/expense/expense.module';
 import { APP_PIPE } from '@nestjs/core';
-import { AcceptLanguageResolver, I18nJsonLoader, I18nModule, QueryResolver } from 'nestjs-i18n';
+import {
+  AcceptLanguageResolver,
+  I18nJsonLoader,
+  I18nModule,
+  QueryResolver,
+} from 'nestjs-i18n';
 import { join } from 'path';
 import { CommonModule } from './modules/common/common.module';
 
@@ -19,9 +24,12 @@ import { CommonModule } from './modules/common/common.module';
         loaderOptions: {
           path: join(__dirname, '/locales/'),
           watch: true,
-        },        
+        },
       }),
-      resolvers: [{ use: QueryResolver, options: ['lang'] }, AcceptLanguageResolver],
+      resolvers: [
+        { use: QueryResolver, options: ['lang'] },
+        AcceptLanguageResolver,
+      ],
     }),
     PrismaModule,
     UserModule,
@@ -29,7 +37,7 @@ import { CommonModule } from './modules/common/common.module';
     GroupModule,
     CurrencyModule,
     ExpenseModule,
-    CommonModule
+    CommonModule,
   ],
   providers: [
     {

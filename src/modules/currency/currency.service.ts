@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import { __ } from 'src/common/helpers/translation.helper';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
@@ -32,7 +36,9 @@ export class CurrencyService {
 
   async findAll(page?: number, perPage?: number, search?: string) {
     if (page === undefined || perPage === undefined) {
-      return this.prisma.currency.findMany({ orderBy: [{ is_main: 'desc' }, { id: 'asc' }] });
+      return this.prisma.currency.findMany({
+        orderBy: [{ is_main: 'desc' }, { id: 'asc' }],
+      });
     }
     const where = search
       ? {
@@ -45,7 +51,12 @@ export class CurrencyService {
       : {};
     const skip = (page - 1) * perPage;
     const [data, total] = await Promise.all([
-      this.prisma.currency.findMany({ where, skip, take: perPage, orderBy: [{ is_main: 'desc' }, { id: 'asc' }] }),
+      this.prisma.currency.findMany({
+        where,
+        skip,
+        take: perPage,
+        orderBy: [{ is_main: 'desc' }, { id: 'asc' }],
+      }),
       this.prisma.currency.count({ where }),
     ]);
     return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) };
@@ -60,11 +71,19 @@ export class CurrencyService {
   async update(id: number, updateCurrencyDto: UpdateCurrencyDto) {
     await this.findOne(id);
 
-    if (updateCurrencyDto.code || updateCurrencyDto.symbol || updateCurrencyDto.country) {
-      const conditions: { code?: string; symbol?: string; country?: string }[] = [];
-      if (updateCurrencyDto.code) conditions.push({ code: updateCurrencyDto.code });
-      if (updateCurrencyDto.symbol) conditions.push({ symbol: updateCurrencyDto.symbol });
-      if (updateCurrencyDto.country) conditions.push({ country: updateCurrencyDto.country });
+    if (
+      updateCurrencyDto.code ||
+      updateCurrencyDto.symbol ||
+      updateCurrencyDto.country
+    ) {
+      const conditions: { code?: string; symbol?: string; country?: string }[] =
+        [];
+      if (updateCurrencyDto.code)
+        conditions.push({ code: updateCurrencyDto.code });
+      if (updateCurrencyDto.symbol)
+        conditions.push({ symbol: updateCurrencyDto.symbol });
+      if (updateCurrencyDto.country)
+        conditions.push({ country: updateCurrencyDto.country });
 
       const conflict = await this.prisma.currency.findFirst({
         where: { OR: conditions, NOT: { id } },
@@ -74,12 +93,18 @@ export class CurrencyService {
 
     if (updateCurrencyDto.is_main) {
       return this.prisma.$transaction(async (tx) => {
-        await tx.currency.updateMany({ where: { id: { not: id } }, data: { is_main: false } });
+        await tx.currency.updateMany({
+          where: { id: { not: id } },
+          data: { is_main: false },
+        });
         return tx.currency.update({ where: { id }, data: updateCurrencyDto });
       });
     }
 
-    return this.prisma.currency.update({ where: { id }, data: updateCurrencyDto });
+    return this.prisma.currency.update({
+      where: { id },
+      data: updateCurrencyDto,
+    });
   }
 
   async remove(id: number) {

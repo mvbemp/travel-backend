@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -11,7 +11,7 @@ async function bootstrap() {
   const corsOrigins = process.env.CORS_ORIGINS?.split(',') ?? [];
   app.enableCors({ origin: corsOrigins });
 
-  app.setGlobalPrefix('api')
+  app.setGlobalPrefix('api');
 
   if (process.env.ENABLE_SWAGGER === 'true') {
     const config = new DocumentBuilder()
@@ -27,10 +27,12 @@ async function bootstrap() {
   // Setup i18n service globally
   const i18n = app.get<I18nService<Record<string, unknown>>>(I18nService);
   setI18nService(i18n);
-  
+
   await app.listen(process.env.APP_PORT || 3000, () => {
     console.log(`Server ready at http://localhost:${process.env.APP_PORT}`);
-    console.log(`Swagger docs at http://localhost:${process.env.APP_PORT}/docs`);
+    console.log(
+      `Swagger docs at http://localhost:${process.env.APP_PORT}/docs`,
+    );
   });
 }
 bootstrap();

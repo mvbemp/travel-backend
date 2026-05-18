@@ -14,10 +14,8 @@ export class GroupMemberEntity {
   @ApiPropertyOptional({ type: String, format: 'date' }) date_of_expiry?: Date;
   @ApiPropertyOptional() comment?: string;
   @ApiProperty() created_by: number;
-  @ApiPropertyOptional() currency_id?: number;
-  @ApiProperty() payment: number;
-  @ApiProperty() original_payment: number;
-  @ApiProperty() currency_rate: number;
+  @ApiProperty({ description: 'Sum of non-deleted payments for this member.' })
+  payment: number;
   @ApiProperty() is_deleted: boolean;
   @ApiPropertyOptional() deleted_by?: number;
   @ApiProperty() created_at: Date;

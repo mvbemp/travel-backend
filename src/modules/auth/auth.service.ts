@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { __ } from 'src/common/helpers/translation.helper';
@@ -14,11 +18,15 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user) throw new UnauthorizedException(__('messages.invalid_credentials'));
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (!user)
+      throw new UnauthorizedException(__('messages.invalid_credentials'));
 
     const passwordMatch = await bcrypt.compare(dto.password, user.password);
-    if (!passwordMatch) throw new UnauthorizedException(__('messages.invalid_credentials'));
+    if (!passwordMatch)
+      throw new UnauthorizedException(__('messages.invalid_credentials'));
 
     const payload = { sub: user.id, email: user.email };
     const token = await this.jwtService.signAsync(payload);
@@ -28,7 +36,9 @@ export class AuthService {
 
   async updateProfile(userId: number, dto: UpdateProfileDto) {
     if (dto.email) {
-      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      const existing = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
       if (existing && existing.id !== userId) {
         throw new ConflictException(__('messages.email_unique'));
       }

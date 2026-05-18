@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import { __ } from 'src/common/helpers/translation.helper';
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -28,13 +32,23 @@ export class ExpenseService {
       ? {
           OR: [
             { name: { contains: search, mode: 'insensitive' as const } },
-            { currency: { code: { contains: search, mode: 'insensitive' as const } } },
+            {
+              currency: {
+                code: { contains: search, mode: 'insensitive' as const },
+              },
+            },
           ],
         }
       : {};
     const skip = (page - 1) * perPage;
     const [data, total] = await Promise.all([
-      this.prisma.expense.findMany({ where, skip, take: perPage, orderBy: { id: 'asc' }, include: { currency: true } }),
+      this.prisma.expense.findMany({
+        where,
+        skip,
+        take: perPage,
+        orderBy: { id: 'asc' },
+        include: { currency: true },
+      }),
       this.prisma.expense.count({ where }),
     ]);
     return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) };

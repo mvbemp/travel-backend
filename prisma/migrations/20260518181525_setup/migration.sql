@@ -49,10 +49,6 @@ CREATE TABLE "group_members" (
     "date_of_expiry" DATE,
     "comment" TEXT,
     "created_by" INTEGER NOT NULL,
-    "currency_id" INTEGER,
-    "payment" DECIMAL(10,2) NOT NULL DEFAULT 0,
-    "original_payment" DECIMAL(10,2) NOT NULL DEFAULT 0,
-    "currency_rate" DECIMAL(20,5) NOT NULL DEFAULT 1,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "is_deleted" BOOLEAN NOT NULL DEFAULT false,
@@ -99,6 +95,24 @@ CREATE TABLE "group_expenses" (
     CONSTRAINT "group_expenses_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "group_member_payments" (
+    "id" SERIAL NOT NULL,
+    "group_member_id" INTEGER NOT NULL,
+    "payment" DECIMAL(10,2) NOT NULL,
+    "original_payment" DECIMAL(10,2) NOT NULL,
+    "currency_id" INTEGER,
+    "currency_rate" DECIMAL(20,5) NOT NULL DEFAULT 1,
+    "main_currency_id" INTEGER,
+    "created_by" INTEGER NOT NULL,
+    "deleted_by" INTEGER,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
+
+    CONSTRAINT "group_member_payments_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
@@ -130,9 +144,6 @@ ALTER TABLE "group_members" ADD CONSTRAINT "group_members_created_by_fkey" FOREI
 ALTER TABLE "group_members" ADD CONSTRAINT "group_members_deleted_by_fkey" FOREIGN KEY ("deleted_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "group_members" ADD CONSTRAINT "group_members_currency_id_fkey" FOREIGN KEY ("currency_id") REFERENCES "currencies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_currency_id_fkey" FOREIGN KEY ("currency_id") REFERENCES "currencies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -140,3 +151,18 @@ ALTER TABLE "group_expenses" ADD CONSTRAINT "group_expenses_group_id_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "group_expenses" ADD CONSTRAINT "group_expenses_expense_id_fkey" FOREIGN KEY ("expense_id") REFERENCES "expenses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "group_member_payments" ADD CONSTRAINT "group_member_payments_group_member_id_fkey" FOREIGN KEY ("group_member_id") REFERENCES "group_members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "group_member_payments" ADD CONSTRAINT "group_member_payments_currency_id_fkey" FOREIGN KEY ("currency_id") REFERENCES "currencies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "group_member_payments" ADD CONSTRAINT "group_member_payments_main_currency_id_fkey" FOREIGN KEY ("main_currency_id") REFERENCES "currencies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "group_member_payments" ADD CONSTRAINT "group_member_payments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "group_member_payments" ADD CONSTRAINT "group_member_payments_deleted_by_fkey" FOREIGN KEY ("deleted_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
