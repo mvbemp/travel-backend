@@ -13,6 +13,7 @@ export class GroupMemberEntity {
   @ApiPropertyOptional({ enum: Gender }) gender?: Gender;
   @ApiPropertyOptional({ type: String, format: 'date' }) date_of_expiry?: Date;
   @ApiPropertyOptional() comment?: string;
+  @ApiPropertyOptional() file_path?: string;
   @ApiProperty() created_by: number;
   @ApiProperty({ description: 'Sum of non-deleted payments for this member.' })
   payment: number;

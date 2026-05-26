@@ -30,7 +30,9 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.24",
     "@nestjs/swagger": "^11.2.6",
+    "@nestjs/websockets": "^11.1.24",
     "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "7.4.0",
     "@types/passport-jwt": "^4.0.1",
@@ -43,7 +45,8 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.18.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -54,6 +57,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",

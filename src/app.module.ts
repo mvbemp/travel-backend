@@ -14,6 +14,8 @@ import {
 } from 'nestjs-i18n';
 import { join } from 'path';
 import { CommonModule } from './modules/common/common.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { CommonModule } from './modules/common/common.module';
     CurrencyModule,
     ExpenseModule,
     CommonModule,
+    ChatModule,
+    NotificationModule,
   ],
   providers: [
     {

@@ -8,6 +8,8 @@ export class GroupEntity {
   @ApiPropertyOptional() description?: string;
   @ApiProperty() date: Date;
   @ApiProperty() is_finished: boolean;
+  @ApiPropertyOptional({ type: String, example: '1500.00' }) price?: string;
+  @ApiPropertyOptional() currency_id?: number;
   @ApiProperty() created_by: number;
   @ApiProperty() created_at: Date;
   @ApiProperty() updated_at: Date;

@@ -11,5 +11,9 @@
   "payment_only_creator_or_admin": "Only the creator or admin can modify this payment",
   "invalid_credentials": "Invalid credentials",
   "not_found": "Record not found",
-  "already_exists": "Record with this data already exists"
+  "already_exists": "Record with this data already exists",
+  "chat_cannot_dm_self": "You cannot message yourself",
+  "chat_message_empty": "Message cannot be empty",
+  "chat_conversation_not_found": "Conversation not found",
+  "chat_not_participant": "You are not a participant in this conversation"
 }

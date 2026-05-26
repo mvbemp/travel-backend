@@ -36,6 +36,11 @@ model User {
   groupMemberPayments GroupMemberPayment[]
   deletedGroupMemberPayments GroupMemberPayment[] @relation("DeletedGroupMemberPayments")
 
+  sentGroupMessages   GroupMessage[]        @relation("GroupMessageSender")
+  groupChatReads      GroupChatRead[]
+
+  notifications       Notification[]
+
   @@map("users")
 }
 
@@ -45,13 +50,18 @@ model Group {
   description String?
   date        DateTime @db.Date
   is_finished Boolean  @default(false)
+  price       Decimal? @db.Decimal(10, 2)
+  currency_id Int?
   created_by  Int
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
   creator       User           @relation(fields: [created_by], references: [id])
+  currency      Currency?      @relation(fields: [currency_id], references: [id])
   groupMember   GroupMember[]
   groupExpenses GroupExpense[]
+  messages      GroupMessage[]
+  chatReads     GroupChatRead[]
 
   @@map("groups")
 }
@@ -79,6 +89,7 @@ model GroupMember {
   gender         Gender?
   date_of_expiry DateTime? @db.Date
   comment        String?
+  file_path      String?
   created_by     Int
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
@@ -104,6 +115,7 @@ model Currency {
   updated_at      DateTime @updatedAt
 
   expenses            Expense[]
+  groups              Group[]
   groupMemberPayments GroupMemberPayment[]
   mainForGroupMemberPayments GroupMemberPayment[] @relation("MainCurrencyForPayments")
 
@@ -138,6 +150,56 @@ model GroupExpense {
   expense Expense @relation(fields: [expense_id], references: [id])
 
   @@map("group_expenses")
+}
+
+model GroupMessage {
+  id         Int      @id @default(autoincrement())
+  group_id   Int
+  sender_id  Int
+  content    String?
+  file_path  String?
+  created_at DateTime @default(now())
+
+  group  Group @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  sender User  @relation("GroupMessageSender", fields: [sender_id], references: [id], onDelete: Cascade)
+
+  @@index([group_id, created_at])
+  @@map("group_messages")
+}
+
+model GroupChatRead {
+  id         Int      @id @default(autoincrement())
+  group_id   Int
+  user_id    Int
+  last_read_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  group Group @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([group_id, user_id])
+  @@index([user_id])
+  @@map("group_chat_reads")
+}
+
+enum NotificationType {
+  MESSAGE_NEW
+}
+
+model Notification {
+  id         Int              @id @default(autoincrement())
+  user_id    Int
+  type       NotificationType
+  title      String
+  body       String?
+  data       Json?
+  read_at    DateTime?
+  created_at DateTime         @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("notifications")
 }
 
 model GroupMemberPayment {

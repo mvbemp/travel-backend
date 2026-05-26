@@ -11,5 +11,9 @@
   "payment_only_creator_or_admin": "Faqat yaratuvchi yoki admin bu to'lovni o'zgartira oladi",
   "invalid_credentials": "Noto'g'ri ma'lumotlar",
   "not_found": "Yozuv topilmadi",
-  "already_exists": "Bunday ma'lumotlar bilan yozuv allaqachon mavjud"
+  "already_exists": "Bunday ma'lumotlar bilan yozuv allaqachon mavjud",
+  "chat_cannot_dm_self": "O'zingizga xabar yubora olmaysiz",
+  "chat_message_empty": "Xabar bo'sh bo'lishi mumkin emas",
+  "chat_conversation_not_found": "Suhbat topilmadi",
+  "chat_not_participant": "Siz bu suhbatda ishtirok etmaysiz"
 }

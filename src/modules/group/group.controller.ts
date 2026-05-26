@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,10 +11,19 @@ import {
   Post,
   Query,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UserType } from 'generated/prisma/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -28,6 +38,7 @@ import { PaginatedGroupEntity } from './entities/paginated-group.entity';
 import { GroupService } from './group.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { memberFileUploadOptions } from './upload.config';
 
 @ApiTags('Groups')
 @ApiBearerAuth()
@@ -109,6 +120,33 @@ export class GroupController {
     @CurrentUser() user: { id: number; type: UserType },
   ) {
     return this.groupService.removeMember(+memberId, user.id, user.type);
+  }
+
+  @Post(':groupId/members/:memberId/file')
+  @UseInterceptors(FileInterceptor('file', memberFileUploadOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @ApiOkResponse({ type: GroupMemberEntity })
+  uploadMemberFile(
+    @Param('memberId') memberId: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('File is required');
+    return this.groupService.setMemberFile(+memberId, file);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
+  @Delete(':groupId/members/:memberId/file')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteMemberFile(@Param('memberId') memberId: string) {
+    return this.groupService.deleteMemberFile(+memberId);
   }
 
   @Post(':id/expenses')

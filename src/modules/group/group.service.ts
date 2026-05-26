@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import ExcelJS from 'exceljs';
+import { promises as fsp } from 'fs';
 import { UserType } from 'generated/prisma/enums';
 import { __ } from 'src/common/helpers/translation.helper';
 import { PrismaService } from 'src/core/prisma/prisma.service';
@@ -13,6 +14,10 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { PaymentService } from './payment.service';
+import {
+  memberFileAbsolutePath,
+  memberFileRelativePath,
+} from './upload.config';
 
 type PaymentLike = {
   payment: unknown;
@@ -153,6 +158,7 @@ export class GroupService {
         orderBy: { created_at: 'desc' },
         include: {
           creator: { omit: { password: true } },
+          currency: true,
           _count: { select: { groupMember: true } },
         },
       }),
@@ -180,6 +186,7 @@ export class GroupService {
       where: { id },
       include: {
         creator: { omit: { password: true } },
+        currency: true,
         groupMember: {
           where: { is_deleted: false },
           include: {
@@ -205,7 +212,33 @@ export class GroupService {
     const mainCurrency = await this.prisma.currency.findFirst({
       where: { is_main: true },
     });
-    const groupMember = group.groupMember.map((m) => this.withPaymentTotal(m));
+
+    const groupCurrencyChange = Number(group.currency?.currency_change) || 1;
+    const groupPriceMain =
+      group.price !== null && group.price !== undefined
+        ? Number(group.price) / groupCurrencyChange
+        : null;
+
+    const groupMember = group.groupMember
+      .map((m) => {
+        const withTotal = this.withPaymentTotal(m);
+        const payment_done =
+          groupPriceMain !== null
+            ? withTotal.payment_main_total >= groupPriceMain - 0.001
+            : false;
+        const payment_remaining =
+          groupPriceMain !== null
+            ? Math.max(groupPriceMain - withTotal.payment_main_total, 0)
+            : 0;
+        return { ...withTotal, payment_done, payment_remaining };
+      })
+      .sort((a, b) => {
+        if (a.payment_done !== b.payment_done) return a.payment_done ? 1 : -1;
+        const aTime = new Date(a.created_at).getTime();
+        const bTime = new Date(b.created_at).getTime();
+        return bTime - aTime;
+      });
+
     const payment_totals = this.summarizeGroupPaymentTotals(
       group.groupMember,
       mainCurrency,
@@ -213,6 +246,7 @@ export class GroupService {
     return {
       ...group,
       groupMember,
+      group_price_main: groupPriceMain,
       payment_totals,
     };
   }
@@ -317,6 +351,51 @@ export class GroupService {
       where: { id: memberId },
       data: { is_deleted: true, deleted_by: userId },
     });
+  }
+
+  private async removeFileFromDisk(relativePath: string): Promise<void> {
+    try {
+      await fsp.unlink(memberFileAbsolutePath(relativePath));
+    } catch {
+      // Missing file is fine — the DB row is the source of truth.
+    }
+  }
+
+  async setMemberFile(memberId: number, file: Express.Multer.File) {
+    const member = await this.prisma.groupMember.findUnique({
+      where: { id: memberId },
+    });
+    if (!member) {
+      await this.removeFileFromDisk(memberFileRelativePath(file.filename));
+      throw new NotFoundException(__('messages.member_not_found'));
+    }
+
+    const newPath = memberFileRelativePath(file.filename);
+    const previous = member.file_path;
+
+    const updated = await this.prisma.groupMember.update({
+      where: { id: memberId },
+      data: { file_path: newPath },
+    });
+
+    if (previous && previous !== newPath) {
+      await this.removeFileFromDisk(previous);
+    }
+    return updated;
+  }
+
+  async deleteMemberFile(memberId: number) {
+    const member = await this.prisma.groupMember.findUnique({
+      where: { id: memberId },
+    });
+    if (!member) throw new NotFoundException(__('messages.member_not_found'));
+    if (!member.file_path) return;
+
+    await this.prisma.groupMember.update({
+      where: { id: memberId },
+      data: { file_path: null },
+    });
+    await this.removeFileFromDisk(member.file_path);
   }
 
   async getDeletedMembers(groupId: number) {

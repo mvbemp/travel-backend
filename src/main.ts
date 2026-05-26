@@ -1,17 +1,20 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { I18nService } from 'nestjs-i18n';
 import { setI18nService } from './common/helpers/translation.helper';
+import { UPLOADS_DIR } from './modules/group/upload.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const corsOrigins = process.env.CORS_ORIGINS?.split(',') ?? [];
   app.enableCors({ origin: corsOrigins });
 
   app.setGlobalPrefix('api');
+  app.useStaticAssets(UPLOADS_DIR, { prefix: '/uploads/' });
 
   if (process.env.ENABLE_SWAGGER === 'true') {
     const config = new DocumentBuilder()

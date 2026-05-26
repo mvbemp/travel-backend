@@ -1,9 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
+  IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
+  Min,
 } from 'class-validator';
 
 export class CreateGroupDto {
@@ -21,4 +25,16 @@ export class CreateGroupDto {
   @IsDateString()
   @IsNotEmpty()
   date: string;
+
+  @ApiPropertyOptional({ example: 1500.5 })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @IsOptional()
+  price?: number;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsInt()
+  @IsPositive()
+  @IsOptional()
+  currency_id?: number;
 }
