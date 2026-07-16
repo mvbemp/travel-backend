@@ -70,6 +70,18 @@ export class GroupController {
     return this.groupService.getDashboard();
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.super_admin)
+  @Get('deleted')
+  @ApiOkResponse({ type: PaginatedGroupEntity })
+  findDeleted(
+    @Query('page') page = 1,
+    @Query('perPage') perPage = 15,
+    @Query('search') search?: string,
+  ) {
+    return this.groupService.findDeleted(+page, +perPage, search);
+  }
+
   @Get(':id')
   @ApiOkResponse({ type: GroupEntity })
   findOne(@Param('id') id: string) {
@@ -85,6 +97,28 @@ export class GroupController {
       'Content-Disposition': `attachment; filename="${filename}"`,
     });
     res.send(buffer);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserType.super_admin)
+  @Get(':id/finance-report')
+  async downloadFinanceReport(@Param('id') id: string, @Res() res: Response) {
+    const { buffer, filename } =
+      await this.groupService.generateFinanceReport(+id);
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(buffer);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserType.super_admin)
+  @Patch(':id/restore')
+  @ApiOkResponse({ type: GroupEntity })
+  restore(@Param('id') id: string) {
+    return this.groupService.restore(+id);
   }
 
   @UseGuards(RolesGuard)
@@ -184,6 +218,6 @@ export class GroupController {
     @Param('id') id: string,
     @CurrentUser() user: { id: number; type: UserType },
   ) {
-    return this.groupService.remove(+id, user.type);
+    return this.groupService.remove(+id, user.id, user.type);
   }
 }

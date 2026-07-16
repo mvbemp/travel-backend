@@ -142,14 +142,19 @@ export class GroupService {
 
   async findAll(page: number, perPage: number, search?: string) {
     const skip = (page - 1) * perPage;
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { description: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    const where = {
+      is_deleted: false,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              {
+                description: { contains: search, mode: 'insensitive' as const },
+              },
+            ],
+          }
+        : {}),
+    };
     const [data, total] = await Promise.all([
       this.prisma.group.findMany({
         skip,
@@ -169,9 +174,13 @@ export class GroupService {
 
   async getDashboard() {
     const [total, finished, totalMembers] = await Promise.all([
-      this.prisma.group.count(),
-      this.prisma.group.count({ where: { is_finished: true } }),
-      this.prisma.groupMember.count(),
+      this.prisma.group.count({ where: { is_deleted: false } }),
+      this.prisma.group.count({
+        where: { is_finished: true, is_deleted: false },
+      }),
+      this.prisma.groupMember.count({
+        where: { group: { is_deleted: false } },
+      }),
     ]);
     return {
       total,
@@ -181,7 +190,7 @@ export class GroupService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, includeDeleted = false) {
     const group = await this.prisma.group.findUnique({
       where: { id },
       include: {
@@ -208,7 +217,9 @@ export class GroupService {
         },
       },
     });
-    if (!group) throw new NotFoundException(__('messages.group_not_found'));
+    if (!group || (group.is_deleted && !includeDeleted)) {
+      throw new NotFoundException(__('messages.group_not_found'));
+    }
     const mainCurrency = await this.prisma.currency.findFirst({
       where: { is_main: true },
     });
@@ -432,12 +443,59 @@ export class GroupService {
     });
   }
 
-  async remove(id: number, userType: UserType) {
+  async remove(id: number, userId: number, userType: UserType) {
     await this.findOne(id);
-    if (userType !== UserType.admin) {
+    if (userType !== UserType.admin && userType !== UserType.super_admin) {
       throw new ForbiddenException(__('messages.group_only_admin_delete'));
     }
-    await this.prisma.group.delete({ where: { id } });
+    await this.prisma.group.update({
+      where: { id },
+      data: { is_deleted: true, deleted_at: new Date(), deleted_by: userId },
+    });
+  }
+
+  async findDeleted(page: number, perPage: number, search?: string) {
+    const skip = (page - 1) * perPage;
+    const where = {
+      is_deleted: true,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              {
+                description: { contains: search, mode: 'insensitive' as const },
+              },
+            ],
+          }
+        : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.group.findMany({
+        skip,
+        take: perPage,
+        where,
+        orderBy: { deleted_at: 'desc' },
+        include: {
+          creator: { omit: { password: true } },
+          deleter: { omit: { password: true } },
+          currency: true,
+          _count: { select: { groupMember: true } },
+        },
+      }),
+      this.prisma.group.count({ where }),
+    ]);
+    return { data, total, page, perPage, lastPage: Math.ceil(total / perPage) };
+  }
+
+  async restore(id: number) {
+    const group = await this.prisma.group.findUnique({ where: { id } });
+    if (!group || !group.is_deleted) {
+      throw new NotFoundException(__('messages.group_not_found'));
+    }
+    return this.prisma.group.update({
+      where: { id },
+      data: { is_deleted: false, deleted_at: null, deleted_by: null },
+    });
   }
 
   async generateReport(
@@ -511,5 +569,221 @@ export class GroupService {
     const safeName =
       group.name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim() || `group-${groupId}`;
     return { buffer: Buffer.from(raw), filename: `${safeName}.xlsx` };
+  }
+
+  async generateFinanceReport(
+    groupId: number,
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    const group = await this.findOne(groupId, true);
+    const mainCurrency = await this.prisma.currency.findFirst({
+      where: { is_main: true },
+    });
+    const mainCode = mainCurrency?.code ?? '';
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Moliyaviy hisobot');
+    sheet.columns = [
+      { width: 5 },
+      { width: 28 },
+      { width: 16 },
+      { width: 10 },
+      { width: 18 },
+      { width: 14 },
+    ];
+
+    const border = {
+      top: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
+      right: { style: 'thin' as const },
+    };
+
+    const formatDate = (date: Date | string | null | undefined): string => {
+      if (!date) return '';
+      const d = new Date(date);
+      return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+    };
+
+    const addTitleRow = (title: string) => {
+      const row = sheet.addRow([title]);
+      sheet.mergeCells(row.number, 1, row.number, 6);
+      row.font = { bold: true, size: 12 };
+      row.height = 18;
+      return row;
+    };
+
+    const addHeaderRow = (headers: string[]) => {
+      const row = sheet.addRow(headers);
+      row.font = { bold: true };
+      row.alignment = { horizontal: 'center', vertical: 'middle' };
+      row.eachCell((cell) => {
+        cell.border = border;
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFEFEFEF' },
+        };
+      });
+      return row;
+    };
+
+    const addDataRow = (values: (string | number)[]) => {
+      const row = sheet.addRow(values);
+      row.eachCell((cell) => {
+        cell.border = border;
+      });
+      return row;
+    };
+
+    // Group header
+    addTitleRow(group.name);
+    sheet.addRow(['', 'Sana:', formatDate(group.date)]);
+    if (group.price !== null && group.price !== undefined) {
+      sheet.addRow([
+        '',
+        'Narx (1 kishi):',
+        `${Number(group.price).toLocaleString()} ${group.currency?.code ?? ''}`,
+      ]);
+    }
+    sheet.addRow([]);
+
+    // Payments: every payment with the payer's full name.
+    addTitleRow("YIG'ILGAN PUL (TO'LOVLAR)");
+    addHeaderRow([
+      '#',
+      'Ism familiya',
+      "To'lov",
+      'Valyuta',
+      `Asosiy valyutada${mainCode ? ` (${mainCode})` : ''}`,
+      'Sana',
+    ]);
+
+    let paymentIndex = 0;
+    let mainTotal = 0;
+    const paymentsByCurrency = new Map<string, number>();
+    for (const member of group.groupMember) {
+      const fullName = `${(member.last_name ?? '').toUpperCase()} ${(member.first_name ?? '').toUpperCase()}`.trim();
+      for (const p of member.payments ?? []) {
+        const cur = p.currency ?? p.mainCurrency ?? null;
+        const original = Number(p.original_payment ?? p.payment ?? 0);
+        const inMain = Number(p.payment ?? 0);
+        mainTotal += inMain;
+        const code = cur?.code ?? '';
+        paymentsByCurrency.set(
+          code,
+          (paymentsByCurrency.get(code) ?? 0) + original,
+        );
+        paymentIndex += 1;
+        addDataRow([
+          paymentIndex,
+          fullName,
+          original,
+          code,
+          Math.round(inMain * 100) / 100,
+          formatDate(p.created_at),
+        ]);
+      }
+    }
+    if (paymentIndex === 0) {
+      addDataRow(['', "To'lovlar yo'q", '', '', '', '']);
+    }
+    for (const [code, total] of paymentsByCurrency) {
+      const row = addDataRow([
+        '',
+        `Jami (${code || 'valyutasiz'})`,
+        Math.round(total * 100) / 100,
+        code,
+        '',
+        '',
+      ]);
+      row.font = { bold: true };
+    }
+    const mainTotalRow = addDataRow([
+      '',
+      `JAMI YIG'ILGAN${mainCode ? ` (${mainCode})` : ''}`,
+      '',
+      '',
+      Math.round(mainTotal * 100) / 100,
+      '',
+    ]);
+    mainTotalRow.font = { bold: true };
+    sheet.addRow([]);
+
+    // Expenses with their names.
+    addTitleRow('HARAJATLAR');
+    addHeaderRow(['#', 'Harajat nomi', 'Qiymati', 'Valyuta', '', '']);
+    const expensesByCurrency = new Map<string, number>();
+    let expenseMainTotal = 0;
+    (group.groupExpenses ?? []).forEach((ge, i) => {
+      const code = ge.expense?.currency?.code ?? '';
+      const value = Number(ge.value ?? 0);
+      const rate = Number(ge.expense?.currency?.currency_change) || 1;
+      expenseMainTotal += value / rate;
+      expensesByCurrency.set(
+        code,
+        (expensesByCurrency.get(code) ?? 0) + value,
+      );
+      addDataRow([
+        i + 1,
+        ge.expense?.name ?? '',
+        value,
+        code,
+        '',
+        '',
+      ]);
+    });
+    if ((group.groupExpenses ?? []).length === 0) {
+      addDataRow(['', "Harajatlar yo'q", '', '', '', '']);
+    }
+    for (const [code, total] of expensesByCurrency) {
+      const row = addDataRow([
+        '',
+        `Jami harajat (${code || 'valyutasiz'})`,
+        Math.round(total * 100) / 100,
+        code,
+        '',
+        '',
+      ]);
+      row.font = { bold: true };
+    }
+    sheet.addRow([]);
+
+    // Summary
+    addTitleRow('XULOSA');
+    const summaryCollected = addDataRow([
+      '',
+      "Jami yig'ilgan",
+      Math.round(mainTotal * 100) / 100,
+      mainCode,
+      '',
+      '',
+    ]);
+    summaryCollected.font = { bold: true };
+    const summaryExpense = addDataRow([
+      '',
+      'Jami harajat',
+      Math.round(expenseMainTotal * 100) / 100,
+      mainCode,
+      '',
+      '',
+    ]);
+    summaryExpense.font = { bold: true };
+    const profitRow = addDataRow([
+      '',
+      'Foyda',
+      Math.round((mainTotal - expenseMainTotal) * 100) / 100,
+      mainCode,
+      '',
+      '',
+    ]);
+    profitRow.font = { bold: true };
+
+    const raw = await workbook.xlsx.writeBuffer();
+    const safeName =
+      group.name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim() || `group-${groupId}`;
+    return {
+      buffer: Buffer.from(raw),
+      filename: `${safeName}-moliyaviy-hisobot.xlsx`,
+    };
   }
 }

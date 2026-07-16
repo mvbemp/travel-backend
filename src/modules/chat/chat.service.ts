@@ -24,6 +24,7 @@ export class ChatService {
 
   async listGroupChats(currentUserId: number) {
     const groups = await this.prisma.group.findMany({
+      where: { is_deleted: false },
       orderBy: { updated_at: 'desc' },
       include: {
         messages: {
@@ -57,7 +58,10 @@ export class ChatService {
       reads.map((r) => [r.group_id, r.last_read_at]),
     );
 
-    const groups = await this.prisma.group.findMany({ select: { id: true } });
+    const groups = await this.prisma.group.findMany({
+      where: { is_deleted: false },
+      select: { id: true },
+    });
 
     let total = 0;
     for (const g of groups) {

@@ -31,6 +31,7 @@ model User {
   updated_at   DateTime @updatedAt
 
   groups              Group[]
+  deletedGroups       Group[]               @relation("DeletedGroups")
   groupMembers        GroupMember[]
   deletedGroupMembers GroupMember[]         @relation("DeletedGroupMembers")
   groupMemberPayments GroupMemberPayment[]
@@ -55,8 +56,12 @@ model Group {
   created_by  Int
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+  is_deleted  Boolean  @default(false)
+  deleted_at  DateTime?
+  deleted_by  Int?
 
   creator       User           @relation(fields: [created_by], references: [id])
+  deleter       User?          @relation("DeletedGroups", fields: [deleted_by], references: [id])
   currency      Currency?      @relation(fields: [currency_id], references: [id])
   groupMember   GroupMember[]
   groupExpenses GroupExpense[]
