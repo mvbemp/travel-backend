@@ -84,8 +84,16 @@ export class GroupController {
 
   @Get(':id')
   @ApiOkResponse({ type: GroupEntity })
-  findOne(@Param('id') id: string) {
-    return this.groupService.findOne(+id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: { type: UserType },
+  ) {
+    const group = await this.groupService.findOne(+id);
+    // Regular users must not see group expenses
+    if (user.type === UserType.user) {
+      return { ...group, groupExpenses: [] };
+    }
+    return group;
   }
 
   @Get(':id/report')
@@ -183,11 +191,15 @@ export class GroupController {
     return this.groupService.deleteMemberFile(+memberId);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
   @Post(':id/expenses')
   addExpense(@Param('id') id: string, @Body() dto: AddGroupExpenseDto) {
     return this.groupService.addExpense(+id, dto);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(UserType.admin, UserType.super_admin)
   @Delete(':id/expenses/:expenseId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeExpense(@Param('expenseId') expenseId: string) {
